@@ -1,17 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import eslint from 'vite-plugin-eslint'
 import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    eslint({
-      cache: false,
-      include: ['./src/**/*.ts', './src/**/*.tsx'],
-      exclude: [],
-    }),
   ],
   resolve: {
     alias: {
@@ -51,22 +45,4 @@ export default defineConfig({
       },
     },
   },
-  optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      'antd',
-      '@ant-design/icons',
-      'dayjs',
-      'lodash-es',
-      'classnames',
-      'axios',
-      'react-query',
-      'zustand',
-      'react-hook-form',
-      '@hookform/resolvers',
-      'yup',
-    ],
-  },
-})
+  })
