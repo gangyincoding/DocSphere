@@ -1,6 +1,7 @@
-import React from 'react'
-import { Layout, Menu, Button, Avatar, Dropdown } from 'antd'
+import React, { useState, useEffect } from 'react'
+import { Layout, Menu, Button, Avatar, Dropdown, message } from 'antd'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
+import { AuthService } from '@services/authService'
 import {
   DashboardOutlined,
   FileOutlined,
@@ -17,9 +18,16 @@ import type { MenuProps } from 'antd'
 const { Header, Sider, Content } = Layout
 
 const AppLayout: React.FC = () => {
-  const [collapsed, setCollapsed] = React.useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const navigate = useNavigate()
   const location = useLocation()
+
+  useEffect(() => {
+    // 获取当前用户信息
+    const user = AuthService.getCurrentUserFromStorage()
+    setCurrentUser(user)
+  }, [])
 
   const menuItems: MenuProps['items'] = [
     {
@@ -80,7 +88,7 @@ const AppLayout: React.FC = () => {
     navigate(key)
   }
 
-  const handleUserMenuClick: MenuProps['onClick'] = ({ key }) => {
+  const handleUserMenuClick: MenuProps['onClick'] = async ({ key }) => {
     switch (key) {
       case 'profile':
         navigate('/profile')
@@ -89,9 +97,19 @@ const AppLayout: React.FC = () => {
         navigate('/settings')
         break
       case 'logout':
-        // TODO: 实现退出登录逻辑
-        console.log('退出登录')
+        await handleLogout()
         break
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout()
+      message.success('已成功退出登录')
+      navigate('/auth/login', { replace: true })
+    } catch (error) {
+      console.error('退出登录失败:', error)
+      message.error('退出登录失败，请稍后重试')
     }
   }
 
@@ -167,8 +185,12 @@ const AppLayout: React.FC = () => {
               borderRadius: 6,
               transition: 'background-color 0.3s',
             }}>
-              <Avatar icon={<UserOutlined />} />
-              <span>管理员</span>
+              <Avatar
+                icon={<UserOutlined />}
+                src={currentUser?.avatar}
+                style={{ backgroundColor: '#1890ff' }}
+              />
+              <span>{currentUser?.name || '用户'}</span>
             </div>
           </Dropdown>
         </Header>
