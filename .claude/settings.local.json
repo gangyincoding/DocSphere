@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where:*)",
+      "Bash(npm run dev:*)",
+      "Bash(findstr:*)",
+      "Bash(nul)",
+      "Bash(dir:*)",
+      "Bash(node:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
