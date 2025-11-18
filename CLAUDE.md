@@ -232,12 +232,10 @@ it('测试描述', () => {
 ### 文件存储
 - `backend/src/services/fileService.ts` - 文件业务逻辑
 - `backend/src/utils/minioClient.ts` - MinIO 客户端封装
-- `minio/start.bat` - MinIO 启动脚本
 
 ### 服务启动
 - `backend/src/simple-server.ts` - 简化的后端服务 (开发用)
 - `backend/src/index.ts` - 完整后端服务
-- `minio/start.bat` - MinIO 启动脚本
 
 ### 前端核心
 - `frontend/vite.config.ts` - Vite 配置
@@ -283,8 +281,13 @@ it('测试描述', () => {
 ```bash
 # 启动 MySQL 服务
 # 创建数据库 docsphere_dev
-# 启动 MinIO 服务 (可选)
-# minio/start.bat
+
+# 启动 MinIO 服务 (Docker 推荐):
+docker run -p 9000:9000 -p 9001:9001 \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin123 \
+  -v /path/to/minio-data:/data \
+  minio/minio server /data --console-address ":9001"
 ```
 
 ### 2. 启动开发服务器
