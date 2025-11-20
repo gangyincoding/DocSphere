@@ -8,7 +8,17 @@
       "Bash(dir:*)",
       "Bash(node:*)",
       "Bash(git add:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(docker-compose --version:*)",
+      "Bash(timeout:*)",
+      "Bash(netstat:*)",
+      "Bash(powershell \"Stop-Process -Id 26384 -Force\")",
+      "Bash(curl:*)",
+      "Bash(ping:*)",
+      "Bash(powershell:*)",
+      "Bash(wc:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npm run test:*)"
     ],
     "deny": [],
     "ask": []

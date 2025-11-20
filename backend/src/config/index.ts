@@ -12,6 +12,7 @@ interface Config {
   };
   jwt: {
     secret: string;
+    refreshSecret: string;
     expiresIn: string;
     refreshExpiresIn: string;
   };
@@ -70,6 +71,7 @@ const config: Config = {
   },
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key',
     expiresIn: process.env.JWT_EXPIRES_IN || '24h',
     refreshExpiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d',
   },
@@ -118,5 +120,11 @@ const config: Config = {
     maxFiles: process.env.LOG_MAX_FILES,
   },
 };
+
+// 便捷属性
+export const isDev = config.app.env === 'development';
+export const isProd = config.app.env === 'production';
+export const port = config.app.port;
+export const nodeEnv = config.app.env;
 
 export default config;

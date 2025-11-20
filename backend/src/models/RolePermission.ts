@@ -116,19 +116,19 @@ RolePermission.init(
     indexes: [
       {
         unique: true,
-        fields: ['roleId', 'permissionId'],
+        fields: ['role_id', 'permission_id'],
       },
       {
-        fields: ['roleId'],
+        fields: ['role_id'],
       },
       {
-        fields: ['permissionId'],
+        fields: ['permission_id'],
       },
       {
-        fields: ['isActive'],
+        fields: ['is_active'],
       },
       {
-        fields: ['grantedBy'],
+        fields: ['granted_by'],
       },
     ],
   }

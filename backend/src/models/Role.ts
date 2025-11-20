@@ -134,10 +134,10 @@ Role.init(
         fields: ['level'],
       },
       {
-        fields: ['isSystem'],
+        fields: ['is_system'],
       },
       {
-        fields: ['isActive'],
+        fields: ['is_active'],
       },
     ],
   }

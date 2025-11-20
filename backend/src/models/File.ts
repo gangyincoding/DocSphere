@@ -369,19 +369,19 @@ File.init(
     paranoid: false,
     indexes: [
       {
-        fields: ['userId'],
+        fields: ['user_id'],
       },
       {
-        fields: ['folderId'],
+        fields: ['folder_id'],
       },
       {
-        fields: ['isDeleted'],
+        fields: ['is_deleted'],
       },
       {
-        fields: ['isPublic'],
+        fields: ['is_public'],
       },
       {
-        fields: ['mimeType'],
+        fields: ['mime_type'],
       },
       {
         fields: ['extension'],
@@ -390,16 +390,16 @@ File.init(
         fields: ['checksum'],
       },
       {
-        fields: ['createdAt'],
+        fields: ['created_at'],
       },
       {
-        fields: ['lastAccessAt'],
+        fields: ['last_access_at'],
       },
       {
-        fields: ['expiresAt'],
+        fields: ['expires_at'],
       },
       {
-        fields: ['name', 'folderId', 'userId', 'isDeleted'],
+        fields: ['name', 'folder_id', 'user_id', 'is_deleted'],
       },
     ],
   }

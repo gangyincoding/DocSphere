@@ -1,12 +1,23 @@
 import React from 'react'
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
+import { authService } from '@services/authService'
 
-const PublicRoute: React.FC = () => {
-  // TODO: 实现真实的认证逻辑
-  // 如果用户已登录，则重定向到仪表盘
-  const isAuthenticated = false // 临时设为false，允许访问登录页面
+interface PublicRouteProps {
+  children: React.ReactNode
+}
 
-  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Outlet />
+/**
+ * 公开路由组件 - 已登录用户访问会重定向到首页
+ */
+const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
+  const isAuthenticated = authService.isAuthenticated()
+
+  if (isAuthenticated) {
+    // 已登录，重定向到首页
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return <>{children}</>
 }
 
 export default PublicRoute

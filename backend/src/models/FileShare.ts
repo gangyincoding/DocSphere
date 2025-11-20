@@ -256,29 +256,29 @@ FileShare.init(
     timestamps: true,
     indexes: [
       {
-        fields: ['fileId'],
+        fields: ['file_id'],
       },
       {
-        fields: ['userId'],
+        fields: ['user_id'],
       },
       {
-        fields: ['shareType'],
+        fields: ['share_type'],
       },
       {
-        fields: ['shareCode'],
+        fields: ['share_code'],
         unique: true,
       },
       {
-        fields: ['expiresAt'],
+        fields: ['expires_at'],
       },
       {
-        fields: ['isActive'],
+        fields: ['is_active'],
       },
       {
-        fields: ['createdBy'],
+        fields: ['created_by'],
       },
       {
-        fields: ['isActive', 'expiresAt'],
+        fields: ['is_active', 'expires_at'],
       },
     ],
   }

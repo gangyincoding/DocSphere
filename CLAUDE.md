@@ -58,6 +58,21 @@ pnpm run test:watch
 
 # 覆盖率报告
 pnpm run test:coverage
+
+# 仅运行单元测试
+pnpm run test:unit
+
+# 仅运行集成测试
+pnpm run test:integration
+
+# 仅运行 E2E 测试
+pnpm run test:e2e
+
+# CI 环境测试
+pnpm run test:ci
+
+# 静默模式测试
+pnpm run test:silent
 ```
 
 **前端测试** (在 frontend 目录):
@@ -87,6 +102,10 @@ cd frontend && pnpm run lint:fix
 
 # 格式化代码
 cd backend && pnpm run format
+cd frontend && pnpm run format
+
+# 类型检查（后端）
+cd backend && pnpm run type-check
 ```
 
 ### 数据库操作
@@ -296,7 +315,7 @@ docker run -p 9000:9000 -p 9001:9001 \
 cd backend && npx ts-node src/simple-server.ts
 
 # 启动前端 (端口 3000)
-cd frontend && npm run dev
+cd frontend && pnpm run dev
 ```
 
 ### 3. 数据库同步

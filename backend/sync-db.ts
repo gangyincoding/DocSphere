@@ -17,6 +17,11 @@ import { Folder } from './src/models/Folder';
 import { File } from './src/models/File';
 import { FileShare } from './src/models/FileShare';
 
+// 导入关联关系以确保所有模型都被初始化
+import './src/models/associations';
+
+logger.info(`✅ 已导入所有模型: ${Object.keys(sequelize.models).join(', ')}`);
+
 /**
  * 同步数据库脚本
  * 此脚本会创建所有表（如果不存在）
@@ -33,16 +38,9 @@ async function syncDatabase() {
     // 同步数据库（创建表）
     // force: true - 会删除现有表并重新创建（仅用于开发环境）
     // alter: true - 会修改表结构以匹配模型（更安全的选择）
-    // 先尝试 alter，如果失败则使用 force
-    try {
-      logger.info('尝试使用 alter 模式同步...');
-      await sequelize.sync({ alter: true, logging: false });
-      logger.info('✅ 使用 alter 模式同步成功');
-    } catch (error) {
-      logger.warn('⚠️  alter 模式失败，尝试使用 force 模式...', error);
-      await sequelize.sync({ force: true, logging: false });
-      logger.info('✅ 使用 force 模式同步成功');
-    }
+    logger.info('使用 force 模式同步数据库（删除所有表并重新创建）...');
+    await sequelize.sync({ force: true, logging: false });
+    logger.info('✅ 使用 force 模式同步成功');
 
     logger.info('✅ 数据库同步成功！');
 

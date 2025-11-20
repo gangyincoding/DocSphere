@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Layout, Menu, Button, Avatar, Dropdown, message } from 'antd'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
-import { AuthService } from '@services/authService'
+import { authService } from '@services/authService'
 import {
   DashboardOutlined,
   FileOutlined,
@@ -25,7 +25,7 @@ const AppLayout: React.FC = () => {
 
   useEffect(() => {
     // 获取当前用户信息
-    const user = AuthService.getCurrentUserFromStorage()
+    const user = authService.getLocalUser()
     setCurrentUser(user)
   }, [])
 
@@ -104,7 +104,7 @@ const AppLayout: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await AuthService.logout()
+      await authService.logout()
       message.success('已成功退出登录')
       navigate('/auth/login', { replace: true })
     } catch (error) {

@@ -6,9 +6,11 @@ import { sequelize } from '../config/database';
 // 用户属性接口
 export interface UserAttributes {
   id: number;
+  username: string;
   email: string;
   password: string;
-  name: string;
+  passwordHash?: string; // 兼容旧代码
+  name?: string;
   avatar?: string;
   phone?: string;
   status: 'active' | 'inactive' | 'suspended';
@@ -21,15 +23,17 @@ export interface UserAttributes {
 
 // 创建用户时的可选属性
 export interface UserCreationAttributes extends Optional<UserAttributes,
-  'id' | 'avatar' | 'phone' | 'status' | 'lastLoginAt' | 'emailVerified' | 'emailVerifiedAt' | 'createdAt' | 'updatedAt'
+  'id' | 'passwordHash' | 'name' | 'avatar' | 'phone' | 'status' | 'lastLoginAt' | 'emailVerified' | 'emailVerifiedAt' | 'createdAt' | 'updatedAt'
 > {}
 
 // 用户模型类
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: number;
+  public username!: string;
   public email!: string;
   public password!: string;
-  public name!: string;
+  public passwordHash?: string;
+  public name?: string;
   public avatar?: string;
   public phone?: string;
   public status!: 'active' | 'inactive' | 'suspended';
@@ -47,30 +51,32 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   public generateAuthToken(): string {
     const payload = {
       id: this.id,
+      username: this.username,
       email: this.email,
       type: 'access'
     };
 
-    return jwt.sign(payload, process.env.JWT_SECRET!, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '24h'
-    });
+    const secret = process.env.JWT_SECRET || 'your-secret-key';
+    const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
+    return (jwt as any).sign(payload, secret, { expiresIn });
   }
 
   public generateRefreshToken(): string {
     const payload = {
       id: this.id,
+      username: this.username,
       email: this.email,
       type: 'refresh'
     };
 
-    return jwt.sign(payload, process.env.JWT_SECRET!, {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d'
-    });
+    const secret = process.env.JWT_SECRET || 'your-secret-key';
+    const expiresIn = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
+    return (jwt as any).sign(payload, secret, { expiresIn });
   }
 
-  public toJSON(): Partial<UserAttributes> {
-    const userObject = Object.assign({}, this.get()) as UserAttributes;
-    delete userObject.password;
+  public toJSON() {
+    const userObject = this.get();
+    delete (userObject as any).password;
     return userObject;
   }
 
@@ -87,6 +93,15 @@ User.init(
       type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
+    },
+    username: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      unique: true,
+      validate: {
+        notEmpty: true,
+        len: [3, 50],
+      },
     },
     email: {
       type: DataTypes.STRING(255),
@@ -107,9 +122,8 @@ User.init(
     },
     name: {
       type: DataTypes.STRING(100),
-      allowNull: false,
+      allowNull: true,
       validate: {
-        notEmpty: true,
         len: [1, 100],
       },
     },
@@ -161,13 +175,17 @@ User.init(
     indexes: [
       {
         unique: true,
+        fields: ['username'],
+      },
+      {
+        unique: true,
         fields: ['email'],
       },
       {
         fields: ['status'],
       },
       {
-        fields: ['emailVerified'],
+        fields: ['email_verified'],
       },
     ],
     hooks: {

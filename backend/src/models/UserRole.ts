@@ -143,25 +143,25 @@ UserRole.init(
     indexes: [
       {
         unique: true,
-        fields: ['userId', 'roleId'],
+        fields: ['user_id', 'role_id'],
       },
       {
-        fields: ['userId'],
+        fields: ['user_id'],
       },
       {
-        fields: ['roleId'],
+        fields: ['role_id'],
       },
       {
-        fields: ['isActive'],
+        fields: ['is_active'],
       },
       {
-        fields: ['assignedBy'],
+        fields: ['assigned_by'],
       },
       {
-        fields: ['expiresAt'],
+        fields: ['expires_at'],
       },
       {
-        fields: ['isActive', 'expiresAt'],
+        fields: ['is_active', 'expires_at'],
       },
     ],
   }

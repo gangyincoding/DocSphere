@@ -146,11 +146,6 @@ FileShare.belongsTo(User, {
   as: 'creator',
 });
 
-File.hasMany(FileShare, {
-  foreignKey: 'fileId',
-  as: 'shares',
-});
-
 User.hasMany(FileShare, {
   foreignKey: 'userId',
   as: 'sharedFiles',

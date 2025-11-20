@@ -1,5 +1,15 @@
-import { Response } from 'express';
+import { Response, Request, NextFunction } from 'express';
 import { ApiResponse, PaginatedResponse } from '../types';
+
+/**
+ * 异步处理器包装函数
+ * 自动捕获异步函数中的错误并传递给错误处理中间件
+ */
+export const asyncHandler = (fn: Function) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
 
 /**
  * 成功响应

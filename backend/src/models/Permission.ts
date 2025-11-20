@@ -142,7 +142,7 @@ Permission.init(
         fields: ['module'],
       },
       {
-        fields: ['isActive'],
+        fields: ['is_active'],
       },
       {
         fields: ['resource', 'action'],

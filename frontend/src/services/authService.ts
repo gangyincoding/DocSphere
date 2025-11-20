@@ -1,99 +1,135 @@
 import { api } from './api'
-import type {
-  LoginRequest,
-  RegisterRequest,
-  LoginResponse,
-  User,
-  ApiResponse,
-} from '@types/index'
 
-export interface LoginResponseData extends LoginResponse {
+// 用户接口
+export interface User {
+  id: number
+  username: string
+  email: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+// 登录请求参数
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+// 登录响应数据
+export interface LoginResponse {
   user: User
   accessToken: string
   refreshToken: string
-  expiresIn: number
 }
 
-export class AuthService {
+// 注册请求参数
+export interface RegisterRequest {
+  username: string
+  email: string
+  password: string
+}
+
+// 注册响应数据
+export interface RegisterResponse {
+  user: User
+  accessToken: string
+  refreshToken: string
+}
+
+// 刷新令牌响应数据
+export interface RefreshTokenResponse {
+  accessToken: string
+  refreshToken: string
+}
+
+/**
+ * 认证服务类
+ */
+class AuthService {
   /**
    * 用户登录
    */
-  static async login(credentials: LoginRequest): Promise<LoginResponseData> {
-    const response = await api.post<LoginResponseData>('/auth/login', credentials)
-    const { data } = response.data
+  async login(data: LoginRequest): Promise<LoginResponse> {
+    const response = await api.post<LoginResponse>('/auth/login', data)
 
-    if (data) {
-      // 保存token和用户信息
-      localStorage.setItem('accessToken', data.accessToken)
-      localStorage.setItem('refreshToken', data.refreshToken)
-      localStorage.setItem('user', JSON.stringify(data.user))
+    if (response.success && response.data) {
+      // 保存令牌和用户信息到本地存储
+      localStorage.setItem('accessToken', response.data.accessToken)
+      localStorage.setItem('refreshToken', response.data.refreshToken)
+      localStorage.setItem('user', JSON.stringify(response.data.user))
 
-      // 计算token过期时间
-      const expiresAt = Date.now() + data.expiresIn * 1000
-      localStorage.setItem('tokenExpiresAt', expiresAt.toString())
+      return response.data
     }
 
-    return data!
+    throw new Error(response.message || '登录失败')
   }
 
   /**
    * 用户注册
    */
-  static async register(userData: RegisterRequest): Promise<User> {
-    const response = await api.post<User>('/auth/register', userData)
-    return response.data.data!
+  async register(data: RegisterRequest): Promise<RegisterResponse> {
+    const response = await api.post<RegisterResponse>('/auth/register', data)
+
+    if (response.success && response.data) {
+      // 保存令牌和用户信息到本地存储
+      localStorage.setItem('accessToken', response.data.accessToken)
+      localStorage.setItem('refreshToken', response.data.refreshToken)
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+
+      return response.data
+    }
+
+    throw new Error(response.message || '注册失败')
   }
 
   /**
    * 用户登出
    */
-  static async logout(): Promise<void> {
+  async logout(): Promise<void> {
     try {
       await api.post('/auth/logout')
     } catch (error) {
-      console.warn('登出请求失败:', error)
+      console.error('登出请求失败:', error)
     } finally {
-      // 清除本地存储
-      this.clearAuthData()
+      // 无论请求是否成功，都清除本地存储
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('user')
     }
   }
 
   /**
-   * 刷新token
+   * 刷新访问令牌
    */
-  static async refreshToken(): Promise<LoginResponseData> {
+  async refreshToken(): Promise<RefreshTokenResponse> {
     const refreshToken = localStorage.getItem('refreshToken')
+
     if (!refreshToken) {
       throw new Error('没有刷新令牌')
     }
 
-    const response = await api.post<LoginResponseData>('/auth/refresh-token', {
-      refreshToken,
+    const response = await api.post<RefreshTokenResponse>('/auth/refresh-token', {
+      refreshToken
     })
 
-    const { data } = response.data
-    if (data) {
-      // 更新token
-      localStorage.setItem('accessToken', data.accessToken)
-      localStorage.setItem('refreshToken', data.refreshToken)
+    if (response.success && response.data) {
+      // 更新令牌
+      localStorage.setItem('accessToken', response.data.accessToken)
+      localStorage.setItem('refreshToken', response.data.refreshToken)
 
-      // 更新过期时间
-      const expiresAt = Date.now() + data.expiresIn * 1000
-      localStorage.setItem('tokenExpiresAt', expiresAt.toString())
+      return response.data
     }
 
-    return data!
+    throw new Error(response.message || '刷新令牌失败')
   }
 
   /**
-   * 验证token
+   * 验证令牌
    */
-  static async verifyToken(): Promise<boolean> {
+  async verifyToken(): Promise<boolean> {
     try {
-      const response = await api.post('/auth/verify-token', {
-        token: localStorage.getItem('accessToken'),
-      })
-      return response.data.success
+      const response = await api.get('/auth/verify')
+      return response.success
     } catch (error) {
       return false
     }
@@ -102,117 +138,57 @@ export class AuthService {
   /**
    * 获取当前用户信息
    */
-  static async getCurrentUser(): Promise<User> {
-    const response = await api.get<User>('/auth/me')
-    return response.data.data!
-  }
+  async getCurrentUser(): Promise<User> {
+    const response = await api.get<{ user: User }>('/auth/me')
 
-  /**
-   * 更新用户资料
-   */
-  static async updateProfile(profileData: Partial<User>): Promise<User> {
-    const response = await api.put<User>('/auth/profile', profileData)
+    if (response.success && response.data) {
+      // 更新本地存储的用户信息
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+      return response.data.user
+    }
 
-    // 更新本地用户信息
-    const updatedUser = response.data.data!
-    localStorage.setItem('user', JSON.stringify(updatedUser))
-
-    return updatedUser
-  }
-
-  /**
-   * 修改密码
-   */
-  static async changePassword(passwordData: {
-    currentPassword: string
-    newPassword: string
-  }): Promise<void> {
-    await api.put('/auth/change-password', passwordData)
+    throw new Error(response.message || '获取用户信息失败')
   }
 
   /**
    * 检查是否已登录
    */
-  static isAuthenticated(): boolean {
+  isAuthenticated(): boolean {
     const token = localStorage.getItem('accessToken')
-    const expiresAt = localStorage.getItem('tokenExpiresAt')
-
-    if (!token || !expiresAt) {
-      return false
-    }
-
-    // 检查token是否过期
-    const isExpired = Date.now() > parseInt(expiresAt)
-    if (isExpired) {
-      this.clearAuthData()
-      return false
-    }
-
-    return true
+    const user = localStorage.getItem('user')
+    return !!(token && user)
   }
 
   /**
-   * 获取当前用户信息（从本地存储）
+   * 获取本地存储的用户信息
    */
-  static getCurrentUserFromStorage(): User | null {
-    try {
-      const userStr = localStorage.getItem('user')
-      return userStr ? JSON.parse(userStr) : null
-    } catch (error) {
-      console.error('解析用户信息失败:', error)
-      return null
+  getLocalUser(): User | null {
+    const userStr = localStorage.getItem('user')
+    if (userStr) {
+      try {
+        return JSON.parse(userStr)
+      } catch (error) {
+        console.error('解析用户信息失败:', error)
+        return null
+      }
     }
+    return null
   }
 
   /**
    * 获取访问令牌
    */
-  static getAccessToken(): string | null {
+  getAccessToken(): string | null {
     return localStorage.getItem('accessToken')
   }
 
   /**
-   * 清除认证数据
+   * 获取刷新令牌
    */
-  static clearAuthData(): void {
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('user')
-    localStorage.removeItem('tokenExpiresAt')
-  }
-
-  /**
-   * 检查token是否即将过期（提前5分钟刷新）
-   */
-  static shouldRefreshToken(): boolean {
-    const expiresAt = localStorage.getItem('tokenExpiresAt')
-    if (!expiresAt) return false
-
-    const fiveMinutes = 5 * 60 * 1000 // 5分钟
-    return Date.now() > parseInt(expiresAt) - fiveMinutes
-  }
-
-  /**
-   * 自动刷新token（如果需要）
-   */
-  static async autoRefreshToken(): Promise<boolean> {
-    if (!this.isAuthenticated()) {
-      return false
-    }
-
-    if (this.shouldRefreshToken()) {
-      try {
-        await this.refreshToken()
-        return true
-      } catch (error) {
-        console.error('自动刷新token失败:', error)
-        this.clearAuthData()
-        return false
-      }
-    }
-
-    return true
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refreshToken')
   }
 }
 
-export default AuthService
+export const authService = new AuthService()
+export default authService

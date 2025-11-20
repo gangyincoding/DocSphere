@@ -206,26 +206,26 @@ Folder.init(
     paranoid: false, // 使用软删除字段而不是paranoid
     indexes: [
       {
-        fields: ['userId'],
+        fields: ['user_id'],
       },
       {
-        fields: ['parentId'],
+        fields: ['parent_id'],
       },
       {
-        fields: ['isDeleted'],
+        fields: ['is_deleted'],
       },
       {
-        fields: ['isPublic'],
+        fields: ['is_public'],
       },
       {
         fields: ['level'],
       },
       {
-        fields: ['path'],
+        fields: [{ name: 'path', length: 255 }], // 索引前255个字符
       },
       {
         unique: true,
-        fields: ['name', 'parentId', 'userId', 'isDeleted'],
+        fields: ['name', 'parent_id', 'user_id', 'is_deleted'],
       },
     ],
   }
