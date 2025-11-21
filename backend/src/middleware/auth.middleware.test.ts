@@ -1,18 +1,30 @@
 import { Request, Response, NextFunction } from 'express'
-import { AuthService } from '../services/auth.service'
 
-// Mock AuthService
-jest.mock('../services/auth.service')
-jest.mock('../utils/logger')
+// Mock AuthService with a factory function
+const mockVerifyAccessToken = jest.fn()
+
+jest.mock('../services/auth.service', () => ({
+  AuthService: jest.fn().mockImplementation(() => ({
+    verifyAccessToken: mockVerifyAccessToken
+  }))
+}))
+
+jest.mock('../utils/logger', () => ({
+  logger: {
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn()
+  }
+}))
 
 // Import after mocking
-const { authMiddleware } = require('./auth.middleware')
+import { authMiddleware } from './auth.middleware'
 
 describe('authMiddleware', () => {
   let mockRequest: Partial<Request>
   let mockResponse: Partial<Response>
   let mockNext: NextFunction
-  let mockAuthService: jest.Mocked<AuthService>
 
   beforeEach(() => {
     mockRequest = {
@@ -26,8 +38,6 @@ describe('authMiddleware', () => {
 
     mockNext = jest.fn()
 
-    // Get the mocked instance
-    mockAuthService = new AuthService() as jest.Mocked<AuthService>
     jest.clearAllMocks()
   })
 
@@ -43,7 +53,7 @@ describe('authMiddleware', () => {
       authorization: 'Bearer valid-token'
     }
 
-    mockAuthService.verifyAccessToken = jest.fn().mockReturnValue(mockDecoded)
+    mockVerifyAccessToken.mockReturnValue(mockDecoded)
 
     // Act
     await authMiddleware(
@@ -105,7 +115,7 @@ describe('authMiddleware', () => {
       authorization: 'Bearer invalid-token'
     }
 
-    mockAuthService.verifyAccessToken = jest.fn().mockImplementation(() => {
+    mockVerifyAccessToken.mockImplementation(() => {
       throw new Error('Invalid token')
     })
 
@@ -131,7 +141,7 @@ describe('authMiddleware', () => {
       authorization: 'Bearer expired-token'
     }
 
-    mockAuthService.verifyAccessToken = jest.fn().mockImplementation(() => {
+    mockVerifyAccessToken.mockImplementation(() => {
       throw new Error('Token expired')
     })
 

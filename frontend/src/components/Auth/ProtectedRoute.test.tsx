@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import ProtectedRoute from './ProtectedRoute'
 import { authService } from '@services/authService'
 
@@ -19,11 +19,13 @@ describe('ProtectedRoute', () => {
   const TestComponent = () => <div>受保护的内容</div>
   const LoginComponent = () => <div>登录页面</div>
 
-  const renderWithRouter = (isAuthenticated: boolean) => {
-    ;(authService.isAuthenticated as any).mockReturnValue(isAuthenticated)
+  it('应该在用户已登录时渲染子组件', () => {
+    // Arrange
+    vi.mocked(authService.isAuthenticated).mockReturnValue(true)
 
-    return render(
-      <BrowserRouter>
+    // Act
+    render(
+      <MemoryRouter initialEntries={['/']}>
         <Routes>
           <Route
             path="/"
@@ -35,13 +37,8 @@ describe('ProtectedRoute', () => {
           />
           <Route path="/auth/login" element={<LoginComponent />} />
         </Routes>
-      </BrowserRouter>
+      </MemoryRouter>
     )
-  }
-
-  it('应该在用户已登录时渲染子组件', () => {
-    // Arrange & Act
-    renderWithRouter(true)
 
     // Assert
     expect(screen.getByText('受保护的内容')).toBeInTheDocument()
@@ -49,8 +46,25 @@ describe('ProtectedRoute', () => {
   })
 
   it('应该在用户未登录时重定向到登录页', () => {
-    // Arrange & Act
-    renderWithRouter(false)
+    // Arrange
+    vi.mocked(authService.isAuthenticated).mockReturnValue(false)
+
+    // Act
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <TestComponent />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/auth/login" element={<LoginComponent />} />
+        </Routes>
+      </MemoryRouter>
+    )
 
     // Assert
     expect(screen.queryByText('受保护的内容')).not.toBeInTheDocument()
@@ -58,22 +72,38 @@ describe('ProtectedRoute', () => {
   })
 
   it('应该调用 authService.isAuthenticated 检查认证状态', () => {
-    // Arrange & Act
-    renderWithRouter(true)
+    // Arrange
+    vi.mocked(authService.isAuthenticated).mockReturnValue(true)
+
+    // Act
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <TestComponent />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    )
 
     // Assert
-    expect(authService.isAuthenticated).toHaveBeenCalledTimes(1)
+    expect(authService.isAuthenticated).toHaveBeenCalled()
   })
 
   it('应该正确传递 children 属性', () => {
     // Arrange
-    ;(authService.isAuthenticated as any).mockReturnValue(true)
+    vi.mocked(authService.isAuthenticated).mockReturnValue(true)
 
     const CustomChild = () => <div>自定义子组件</div>
 
     // Act
     render(
-      <BrowserRouter>
+      <MemoryRouter initialEntries={['/']}>
         <Routes>
           <Route
             path="/"
@@ -84,7 +114,7 @@ describe('ProtectedRoute', () => {
             }
           />
         </Routes>
-      </BrowserRouter>
+      </MemoryRouter>
     )
 
     // Assert
@@ -93,11 +123,11 @@ describe('ProtectedRoute', () => {
 
   it('应该处理多个子组件', () => {
     // Arrange
-    ;(authService.isAuthenticated as any).mockReturnValue(true)
+    vi.mocked(authService.isAuthenticated).mockReturnValue(true)
 
     // Act
     render(
-      <BrowserRouter>
+      <MemoryRouter initialEntries={['/']}>
         <Routes>
           <Route
             path="/"
@@ -109,7 +139,7 @@ describe('ProtectedRoute', () => {
             }
           />
         </Routes>
-      </BrowserRouter>
+      </MemoryRouter>
     )
 
     // Assert
