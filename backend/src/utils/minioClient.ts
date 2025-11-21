@@ -70,7 +70,7 @@ export class MinioStorage {
     metaData?: { [key: string]: string }
   ): Promise<string> {
     try {
-      const etag = await minioClient.putObject(
+      const result = await minioClient.putObject(
         this.bucket,
         objectName,
         buffer,
@@ -78,6 +78,7 @@ export class MinioStorage {
         metaData
       );
 
+      const etag = typeof result === 'string' ? result : result.etag;
       logger.info(`文件上传成功: ${objectName}, ETag: ${etag}`);
       return etag;
     } catch (error) {
@@ -146,11 +147,13 @@ export class MinioStorage {
     destObject: string
   ): Promise<string> {
     try {
-      const etag = await minioClient.copyObject(
+      const result = await minioClient.copyObject(
         this.bucket,
         destObject,
-        `/${this.bucket}/${sourceObject}`
+        `/${this.bucket}/${sourceObject}`,
+        null as any
       );
+      const etag = typeof result === 'string' ? result : (result as any).etag || '';
       logger.info(`文件复制成功: ${sourceObject} -> ${destObject}`);
       return etag;
     } catch (error) {
@@ -233,7 +236,7 @@ export class MinioStorage {
   public async listFiles(prefix?: string, maxKeys?: number): Promise<any[]> {
     try {
       const objectsList: any[] = [];
-      const stream = minioClient.listObjects(this.bucket, prefix, false, maxKeys);
+      const stream = minioClient.listObjects(this.bucket, prefix, false);
 
       return new Promise((resolve, reject) => {
         stream.on('data', (obj) => objectsList.push(obj));
