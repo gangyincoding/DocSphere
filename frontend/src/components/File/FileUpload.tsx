@@ -19,8 +19,7 @@ import {
   FileOutlined,
 } from '@ant-design/icons'
 import type { UploadProps, UploadFile as AntdUploadFile } from 'antd'
-import { FileService } from '@services/fileService'
-import type { UploadFile } from '@types/index'
+import { FileService, FileInfo } from '@services/fileService'
 
 const { Dragger } = Upload
 const { Text, Title } = Typography
@@ -28,7 +27,7 @@ const { TextArea } = Input
 
 interface FileUploadProps {
   folderId?: number
-  onUploadSuccess?: (file: UploadFile) => void
+  onUploadSuccess?: (file: FileInfo) => void
   accept?: string
   multiple?: boolean
 }
@@ -36,8 +35,10 @@ interface FileUploadProps {
 interface UploadModalProps {
   visible: boolean
   onCancel: () => void
-  onUploadSuccess: (files: UploadFile[]) => void
+  onUploadSuccess: (files: FileInfo[]) => void
   folderId?: number
+  accept?: string
+  multiple?: boolean
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -51,7 +52,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const showUploadModal = () => setUploadModalVisible(true)
 
-  const handleUploadSuccess = (file: UploadFile) => {
+  const handleUploadSuccess = (file: FileInfo) => {
     message.success(`文件 ${file.originalName} 上传成功！`)
     onUploadSuccess?.(file)
   }
@@ -125,7 +126,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
     setUploading(true)
 
     try {
-      const uploadedFiles: UploadFile[] = []
+      const uploadedFiles: FileInfo[] = []
 
       for (let i = 0; i < fileList.length; i++) {
         const file = fileList[i]
@@ -133,50 +134,27 @@ const UploadModal: React.FC<UploadModalProps> = ({
 
         if (!originFileObj) continue
 
-        // 创建FormData
-        const formData = new FormData()
-        formData.append('file', originFileObj)
-
-        // 添加其他字段
-        if (folderId) {
-          formData.append('folderId', folderId.toString())
-        }
-        if (values.description) {
-          formData.append('description', values.description)
-        }
-        if (values.isPublic) {
-          formData.append('isPublic', values.isPublic.toString())
-        }
-        if (tags.length > 0) {
-          formData.append('tags', tags.join(','))
-        }
-
         try {
-          // 模拟上传进度
-          const progressInterval = setInterval(() => {
-            setUploadProgress(prev => ({
-              ...prev,
-              [file.uid]: Math.min((prev[file.uid] || 0) + 10, 90)
-            }))
-          }, 200)
-
-          const uploadedFile = await FileService.uploadFile({
-            file: originFileObj,
+          // 使用新的 FileService API 上传
+          const response = await FileService.uploadFile(originFileObj, {
             folderId,
             description: values.description,
             isPublic: values.isPublic,
-            tags: tags,
+            tags: tags.join(','),
+            onProgress: (percent) => {
+              setUploadProgress(prev => ({ ...prev, [file.uid]: percent }))
+            }
           })
 
-          clearInterval(progressInterval)
-          setUploadProgress(prev => ({ ...prev, [file.uid]: 100 }))
-
-          uploadedFiles.push(uploadedFile)
-          message.success(`${originFileObj.name} 上传成功！`)
+          if (response.success && response.data) {
+            uploadedFiles.push(response.data)
+            message.success(`${originFileObj.name} 上传成功！`)
+          } else {
+            message.error(`${originFileObj.name} 上传失败: ${response.message}`)
+          }
         } catch (error) {
           console.error('上传失败:', error)
           message.error(`${originFileObj.name} 上传失败`)
-          clearInterval(progressInterval)
         }
       }
 
