@@ -7,7 +7,6 @@ import {
   Form,
   Input,
   Select,
-  Tooltip,
   message,
   Dropdown,
   Menu,
@@ -21,8 +20,8 @@ import {
   PlusOutlined,
 } from '@ant-design/icons'
 import type { DataNode } from 'antd/es/tree'
-import { FileService } from '@services/fileService'
-import type { Folder } from '@types/index'
+import { FolderService } from '@services/fileService'
+import type { Folder } from '../../types'
 
 interface FolderTreeProps {
   onSelect?: (folder: Folder) => void
@@ -34,23 +33,22 @@ const FolderTree: React.FC<FolderTreeProps> = ({
   selectedFolderId,
 }) => {
   const [treeData, setTreeData] = useState<DataNode[]>([])
-  const [loading, setLoading] = useState(false)
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null)
   const [form] = Form.useForm()
 
   // 加载文件夹树
   const loadFolders = useCallback(async () => {
-    setLoading(true)
     try {
-      const folders = await FileService.getFolderTree()
-      const treeData = convertToTreeData(folders)
+      const response = await FolderService.getFolderTree()
+      if (!response.success || !response.data) {
+        throw new Error(response.message || '获取文件夹树失败')
+      }
+      const treeData = convertToTreeData(response.data as any)
       setTreeData(treeData)
     } catch (error) {
       console.error('加载文件夹失败:', error)
       message.error('加载文件夹失败')
-    } finally {
-      setLoading(false)
     }
   }, [])
 
@@ -145,7 +143,10 @@ const FolderTree: React.FC<FolderTreeProps> = ({
   // 删除文件夹
   const handleDeleteFolder = async (folder: Folder) => {
     try {
-      await FileService.deleteFolder(folder.id)
+      const response = await FolderService.deleteFolder(folder.id)
+      if (!response.success) {
+        throw new Error(response.message || '删除文件夹失败')
+      }
       message.success('文件夹删除成功')
       loadFolders()
     } catch (error) {
@@ -166,20 +167,26 @@ const FolderTree: React.FC<FolderTreeProps> = ({
 
       if (editingFolder && editingFolder.id) {
         // 更新文件夹
-        await FileService.updateFolder(editingFolder.id, {
+        const response = await FolderService.updateFolder(editingFolder.id, {
           name: values.name.trim(),
           description: values.description?.trim(),
           isPublic: values.isPublic,
         })
+        if (!response.success) {
+          throw new Error(response.message || '更新文件夹失败')
+        }
         message.success('文件夹更新成功')
       } else {
         // 创建文件夹
-        await FileService.createFolder({
+        const response = await FolderService.createFolder({
           name: values.name.trim(),
           parentId: editingFolder?.id,
           description: values.description?.trim(),
           isPublic: values.isPublic,
         })
+        if (!response.success) {
+          throw new Error(response.message || '创建文件夹失败')
+        }
         message.success('文件夹创建成功')
       }
 
@@ -236,7 +243,6 @@ const FolderTree: React.FC<FolderTreeProps> = ({
         selectedKeys={selectedFolderId ? [selectedFolderId.toString()] : []}
         onSelect={handleSelect}
         treeData={treeData}
-        loading={loading}
       />
 
       {/* 创建/编辑文件夹模态框 */}
