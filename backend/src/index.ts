@@ -29,7 +29,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 })
 
 // API 路由
-app.use('/api/v1', routes)
+app.use('/api', routes)
 
 // 健康检查
 app.get('/health', (req: Request, res: Response) => {
