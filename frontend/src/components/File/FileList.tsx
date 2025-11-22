@@ -9,12 +9,9 @@ import {
   Input,
   Select,
   Card,
-  Typography,
   Modal,
   message,
   Dropdown,
-  Menu,
-  Divider,
   Empty,
 } from 'antd'
 import {
@@ -24,38 +21,35 @@ import {
   ShareAltOutlined,
   EditOutlined,
   MoreOutlined,
-  SearchOutlined,
-  FilterOutlined,
   FileOutlined,
   FolderOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { FileService } from '@services/fileService'
-import type { File as FileType, Folder } from '@types/index'
+import type { File, Folder } from '../../types'
 import { formatDateTime, formatFileSize, getFileType, getColorByType } from '@utils/index'
 import FilePreview from './FilePreview'
 
-const { Text } = Typography
 const { Search } = Input
 
 interface FileListProps {
   folderId?: number
   viewMode?: 'list' | 'grid'
-  onFileSelect?: (file: FileType) => void
+  onFileSelect?: (file: File) => void
   onFolderSelect?: (folder: Folder) => void
   onRefresh?: () => void
 }
 
-interface FileItem extends FileType {
+interface FileItem extends File {
   key: number
 }
 
 const FileList: React.FC<FileListProps> = ({
   folderId,
-  viewMode = 'list',
+  viewMode: _viewMode = 'list',
   onFileSelect,
-  onFolderSelect,
+  onFolderSelect: _onFolderSelect,
   onRefresh,
 }) => {
   const [loading, setLoading] = useState(false)
@@ -71,24 +65,56 @@ const FileList: React.FC<FileListProps> = ({
     total: 0,
   })
   const [previewVisible, setPreviewVisible] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<FileType | null>(null)
+  const [selectedFile, setSelectedFile] = useState<FileItem | null>(null)
 
   // 加载文件列表
   const loadFiles = useCallback(async () => {
     setLoading(true)
     try {
-      const params = {
-        folderId,
-        search: searchText || undefined,
-        mimeType: filterType || undefined,
-        sortBy,
-        sortOrder: sortOrder.toUpperCase() as 'ASC' | 'DESC',
-        page: pagination.current,
-        pageSize: pagination.pageSize,
+      // 使用新的 API 调用
+      const response = folderId
+        ? await FileService.getFolderFiles(folderId, pagination.current, pagination.pageSize)
+        : await FileService.getUserFiles(pagination.current, pagination.pageSize)
+
+      if (!response.success || !response.data) {
+        throw new Error(response.message || '获取文件列表失败')
       }
 
-      const response = await FileService.getFiles(params)
-      const fileItems = response.data.items.map(file => ({
+      let fileList = (response.data.files || []) as File[]
+
+      // 前端搜索过滤
+      if (searchText) {
+        fileList = fileList.filter(file =>
+          file.originalName.toLowerCase().includes(searchText.toLowerCase())
+        )
+      }
+
+      // 前端类型过滤
+      if (filterType) {
+        fileList = fileList.filter(file =>
+          file.mimeType.toLowerCase().includes(filterType.toLowerCase())
+        )
+      }
+
+      // 前端排序
+      fileList.sort((a, b) => {
+        let aValue: any = a[sortBy as keyof File]
+        let bValue: any = b[sortBy as keyof File]
+
+        if (sortBy === 'createdAt') {
+          aValue = new Date(aValue).getTime()
+          bValue = new Date(bValue).getTime()
+        }
+
+        if (sortOrder === 'asc') {
+          return aValue > bValue ? 1 : -1
+        } else {
+          return aValue < bValue ? 1 : -1
+        }
+      })
+
+      // 转换为 FileItem 格式
+      const fileItems: FileItem[] = fileList.map(file => ({
         ...file,
         key: file.id,
       }))
@@ -96,7 +122,7 @@ const FileList: React.FC<FileListProps> = ({
       setFiles(fileItems)
       setPagination(prev => ({
         ...prev,
-        total: response.data.total,
+        total: response.data?.pagination.total || 0,
       }))
     } catch (error) {
       console.error('加载文件列表失败:', error)
@@ -113,7 +139,20 @@ const FileList: React.FC<FileListProps> = ({
   // 文件操作
   const handleDownload = async (file: FileItem) => {
     try {
-      await FileService.downloadFile(file.id, file.originalName)
+      const blob = await FileService.downloadFile(file.id)
+
+      // 创建下载链接
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = file.originalName
+      document.body.appendChild(a)
+      a.click()
+
+      // 清理
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+
       message.success(`${file.originalName} 下载成功`)
     } catch (error) {
       console.error('下载失败:', error)
@@ -143,7 +182,7 @@ const FileList: React.FC<FileListProps> = ({
     setSelectedFile(null)
   }
 
-  const handleShare = (file: FileItem) => {
+  const handleShare = (_file: FileItem) => {
     // TODO: 实现文件分享功能
     Modal.info({
       title: '文件分享',
@@ -324,7 +363,7 @@ const FileList: React.FC<FileListProps> = ({
   }
 
   // 处理表格变化
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+  const handleTableChange = (pagination: any, _filters: any, sorter: any) => {
     setPagination(pagination)
     if (sorter.field) {
       setSortBy(sorter.field)
